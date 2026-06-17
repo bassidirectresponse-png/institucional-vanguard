@@ -231,7 +231,8 @@
 
     function resize(){
       var rect = canvas.getBoundingClientRect();
-      W = rect.width; H = rect.height;
+      W = Math.min(rect.width, window.innerWidth || rect.width);
+      H = rect.height;
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
@@ -239,11 +240,12 @@
     window.addEventListener('resize', resize);
 
     function ease(t){ return t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t); }
-    function scrollProgress(){
+    function getTarget(time){
+      if (REDUCE) return 1;
       if (!section) return 1;
-      var rect = section.getBoundingClientRect();
       var total = section.offsetHeight - window.innerHeight;
-      if (total <= 0) return rect.top < window.innerHeight ? 1 : 0;
+      if (total <= 40) return Math.min(time / 1.3, 1);   // static (phones): auto-play on view
+      var rect = section.getBoundingClientRect();
       var scrolled = Math.min(Math.max(-rect.top, 0), total);
       return scrolled / total;
     }
@@ -251,19 +253,26 @@
     var prog = REDUCE ? 1 : 0;
 
     runWhileVisible(canvas, function(time){
-      var target = REDUCE ? 1 : scrollProgress();
+      resize();                                   // keep dimensions accurate (mobile chrome resize, etc.)
+      var target = getTarget(time);
       prog += (target - prog) * 0.1;
       var p = prog, n = labels.length;
       ctx.clearRect(0, 0, W, H);
 
       var ccx = W / 2, ccy = H / 2;
       var unit = Math.min(W, H);
-      var pad = Math.max(64, unit * 0.16);          // keep nodes + labels off the edges
-      var ring = Math.min(unit * 0.34, (W / 2) - pad, (H / 2) - 28);
+      var nodeR = Math.max(5, unit * 0.013);
+      var fontPx = unit < 460 ? 10 : 11;
+      // radius derived from the actual label widths, so labels never clip
+      ctx.font = '600 ' + fontPx + 'px "JetBrains Mono", monospace';
+      var maxLabel = 0;
+      for (var li = 0; li < n; li++){ maxLabel = Math.max(maxLabel, ctx.measureText(labels[li].toUpperCase()).width); }
+      var padX = maxLabel + nodeR + 18;
+      var padY = fontPx + nodeR + 20;
+      var ring = Math.min(unit * 0.34, (W / 2) - padX, (H / 2) - padY);
+      if (ring < unit * 0.16) ring = unit * 0.16;
       var hubScale = ease(p / 0.45);
-      var hubR = unit * 0.05 + hubScale * unit * 0.07;
-      var nodeR = Math.max(5, unit * 0.012);
-      var fontPx = unit < 480 ? 10 : 11;
+      var hubR = Math.min(unit * 0.05 + hubScale * unit * 0.07, ring * 0.6);
 
       // faint concentric guide rings
       ctx.lineWidth = 1;
