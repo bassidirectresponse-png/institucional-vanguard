@@ -1,32 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 445 160" role="img" aria-label="Vanguard Group">
-  <!-- network lines (left wing) -->
-  <g stroke="#ffffff" stroke-width="1.6" fill="none" opacity=".85">
-    <path d="M40 60 L62 78 L52 104 L78 96"/>
-    <path d="M62 78 L86 68"/>
-    <path d="M52 104 L38 86"/>
-    <path d="M40 60 L38 86"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 160" role="img" aria-label="Vanguard Group">
+  <!-- low-poly network (left wing) -->
+  <g stroke="#ffffff" stroke-width="1.5" fill="none" opacity=".85" stroke-linecap="round">
+    <path d="M42 60 L60 52 L54 80 Z"/>
+    <path d="M60 52 L68 72 L54 80"/>
+    <path d="M42 60 L54 80 L40 86"/>
+    <path d="M54 80 L58 104 L40 86"/>
+    <path d="M58 104 L78 92 L68 72"/>
   </g>
   <g fill="#ffffff">
-    <circle cx="40" cy="60" r="3.4"/>
-    <circle cx="62" cy="78" r="4.2"/>
-    <circle cx="52" cy="104" r="3.4"/>
-    <circle cx="86" cy="68" r="3"/>
-    <circle cx="38" cy="86" r="2.6"/>
-    <circle cx="78" cy="96" r="2.6"/>
+    <circle cx="42" cy="60" r="3.6"/>
+    <circle cx="60" cy="52" r="3"/>
+    <circle cx="68" cy="72" r="4"/>
+    <circle cx="54" cy="80" r="3"/>
+    <circle cx="40" cy="86" r="2.6"/>
+    <circle cx="58" cy="104" r="3.2"/>
+    <circle cx="78" cy="92" r="2.6"/>
   </g>
 
-  <!-- V mark -->
-  <path d="M22 34 L78 132 L134 34" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- V silhouette -->
+  <path d="M26 36 L78 128 L130 36" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- arrow piercing upward on the right -->
+  <!-- upward arrow on the right -->
   <g fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M84 100 L120 38"/>
-    <path d="M101 40 L122 34 L117 55"/>
+    <path d="M86 98 L122 40"/>
+    <path d="M103 40 L123 35 L118 55"/>
   </g>
 
-  <!-- wordmark -->
-  <text x="170" y="74" font-family="'Space Grotesk', 'Segoe UI', Arial, sans-serif" font-size="50" font-weight="700" letter-spacing="1" fill="#ffffff">VANGUARD</text>
-  <text x="172" y="116" font-family="'Space Grotesk', 'Segoe UI', Arial, sans-serif" font-size="38" font-weight="500" letter-spacing="13" fill="#ffffff">GROUP</text>
-  <rect x="172" y="126" width="252" height="3.4" fill="#ffffff"/>
-  <text x="173" y="147" font-family="'JetBrains Mono', 'Courier New', monospace" font-size="10.6" font-weight="600" letter-spacing="1.1" fill="#ffffff">DIRECT RESPONSE • INFOSAAS • GLOBAL</text>
+  <!-- wordmark (textLength locks width so it never clips) -->
+  <text x="168" y="72" textLength="252" lengthAdjust="spacingAndGlyphs"
+    font-family="'Space Grotesk','Segoe UI',Arial,sans-serif" font-size="48" font-weight="700" fill="#ffffff">VANGUARD</text>
+  <text x="170" y="114" textLength="248" lengthAdjust="spacingAndGlyphs"
+    font-family="'Space Grotesk','Segoe UI',Arial,sans-serif" font-size="34" font-weight="500" fill="#ffffff">GROUP</text>
+  <rect x="170" y="123" width="248" height="3.2" rx="1.6" fill="#ffffff"/>
+  <text x="170" y="143" textLength="248" lengthAdjust="spacingAndGlyphs"
+    font-family="'JetBrains Mono','Courier New',monospace" font-size="11" font-weight="600" fill="#ffffff" opacity=".92">DIRECT RESPONSE • INFOSAAS • GLOBAL</text>
 </svg>
