@@ -252,64 +252,108 @@
 
     runWhileVisible(canvas, function(time){
       var target = REDUCE ? 1 : scrollProgress();
-      prog += (target - prog) * 0.12;
+      prog += (target - prog) * 0.1;
       var p = prog, n = labels.length;
       ctx.clearRect(0, 0, W, H);
 
       var ccx = W / 2, ccy = H / 2;
       var unit = Math.min(W, H);
-      var ring = unit * 0.34;
-      var hubScale = ease(p / 0.5);
-      var hubR = unit * 0.045 + hubScale * unit * 0.075;
+      var pad = Math.max(64, unit * 0.16);          // keep nodes + labels off the edges
+      var ring = Math.min(unit * 0.34, (W / 2) - pad, (H / 2) - 28);
+      var hubScale = ease(p / 0.45);
+      var hubR = unit * 0.05 + hubScale * unit * 0.07;
+      var nodeR = Math.max(5, unit * 0.012);
+      var fontPx = unit < 480 ? 10 : 11;
+
+      // faint concentric guide rings
+      ctx.lineWidth = 1;
+      [0.52, 0.78, 1].forEach(function(f){
+        ctx.beginPath(); ctx.arc(ccx, ccy, ring * f, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(30,138,69,' + (0.05 * hubScale) + ')';
+        ctx.stroke();
+      });
+
+      // slow-moving dashed orbit (data-flow feel, nodes stay put)
+      ctx.save();
+      ctx.setLineDash([2, 9]);
+      ctx.lineDashOffset = REDUCE ? 0 : -time * 14;
+      ctx.beginPath(); ctx.arc(ccx, ccy, ring, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(30,138,69,' + (0.14 * hubScale) + ')';
+      ctx.lineWidth = 1; ctx.stroke();
+      ctx.restore();
 
       ctx.textBaseline = 'middle';
       for (var i = 0; i < n; i++){
         var a = (i / n) * Math.PI * 2 - Math.PI / 2;
-        var sx = ccx + Math.cos(a) * ring, sy = ccy + Math.sin(a) * ring;
-        var lp = ease((p - 0.26 - i * 0.045) / 0.45);
-        var dx = sx - ccx, dy = sy - ccy, len = Math.hypot(dx, dy) || 1;
-        var ux = dx / len, uy = dy / len;
+        var ca = Math.cos(a), sa = Math.sin(a);
+        var sx = ccx + ca * ring, sy = ccy + sa * ring;
+        var lp = ease((p - 0.24 - i * 0.05) / 0.5);
+        var ux = ca, uy = sa;
         var x0 = ccx + ux * hubR, y0 = ccy + uy * hubR;
-        var x1 = ccx + ux * (hubR + (len - hubR) * lp);
-        var y1 = ccy + uy * (hubR + (len - hubR) * lp);
+        var x1 = ccx + ux * (hubR + (ring - hubR) * lp);
+        var y1 = ccy + uy * (hubR + (ring - hubR) * lp);
 
         if (lp > 0.002){
+          var grad = ctx.createLinearGradient(x0, y0, sx, sy);
+          grad.addColorStop(0, 'rgba(30,138,69,' + (0.45 * lp) + ')');
+          grad.addColorStop(1, 'rgba(30,138,69,' + (0.12 * lp) + ')');
           ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
-          ctx.strokeStyle = 'rgba(30,138,69,' + (0.16 + lp * 0.34) + ')';
-          ctx.lineWidth = 1.4; ctx.stroke();
-          if (!REDUCE && lp > 0.55){
-            var tp = (time * 0.5 + i * 0.2) % 1;
+          ctx.strokeStyle = grad; ctx.lineWidth = 1; ctx.stroke();
+          if (!REDUCE && lp > 0.6){
+            var tp = (time * 0.45 + i * 0.18) % 1;
             ctx.beginPath();
-            ctx.arc(x0 + (sx - x0) * tp, y0 + (sy - y0) * tp, 2.3, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(200,255,61,0.9)'; ctx.fill();
+            ctx.arc(x0 + (sx - x0) * tp, y0 + (sy - y0) * tp, 1.8, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(200,255,61,' + (0.85 * lp) + ')'; ctx.fill();
           }
         }
 
-        ctx.beginPath(); ctx.arc(sx, sy, 4 + lp * 6.5, 0, Math.PI * 2);
+        // node: hollow ring that fills as it connects
+        ctx.beginPath(); ctx.arc(sx, sy, nodeR, 0, Math.PI * 2);
         ctx.fillStyle = '#fff'; ctx.fill();
-        ctx.lineWidth = 1.6;
-        ctx.strokeStyle = 'rgba(30,138,69,' + (0.4 + lp * 0.5) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(30,138,69,' + (0.35 + lp * 0.55) + ')';
         ctx.stroke();
+        if (lp > 0.5){
+          ctx.beginPath(); ctx.arc(sx, sy, nodeR * 0.42, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(30,138,69,' + ((lp - 0.5) * 2) + ')'; ctx.fill();
+        }
 
+        // label (clamped so it never clips the canvas edge)
         ctx.globalAlpha = lp;
         ctx.fillStyle = '#586056';
-        ctx.font = '600 12px "JetBrains Mono", monospace';
-        var ca = Math.cos(a);
+        ctx.font = '600 ' + fontPx + 'px "JetBrains Mono", monospace';
         ctx.textAlign = ca > 0.25 ? 'left' : (ca < -0.25 ? 'right' : 'center');
-        ctx.fillText(labels[i].toUpperCase(), sx + ca * 16, sy + Math.sin(a) * 16);
+        var lx = sx + ca * (nodeR + 8);
+        var tw = ctx.measureText(labels[i].toUpperCase()).width;
+        if (ctx.textAlign === 'left') lx = Math.min(lx, W - tw - 6);
+        else if (ctx.textAlign === 'right') lx = Math.max(lx, tw + 6);
+        ctx.fillText(labels[i].toUpperCase(), lx, sy + sa * (nodeR + 9));
         ctx.globalAlpha = 1;
       }
 
-      var hg = ctx.createRadialGradient(ccx, ccy - hubR * 0.35, hubR * 0.2, ccx, ccy, hubR);
-      hg.addColorStop(0, '#2fae57'); hg.addColorStop(1, '#0E4A26');
+      // hub pulse rings (subtle)
+      if (!REDUCE && hubScale > 0.4){
+        for (var pr = 0; pr < 2; pr++){
+          var tt = (time * 0.45 + pr * 0.5) % 1;
+          ctx.beginPath(); ctx.arc(ccx, ccy, hubR * (1 + tt * 0.7), 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(200,255,61,' + (0.28 * (1 - tt) * hubScale) + ')';
+          ctx.lineWidth = 1.5; ctx.stroke();
+        }
+      }
+
+      // hub disc
+      var hg = ctx.createRadialGradient(ccx - hubR * 0.3, ccy - hubR * 0.4, hubR * 0.1, ccx, ccy, hubR);
+      hg.addColorStop(0, '#3FC76A'); hg.addColorStop(0.5, '#1E8A45'); hg.addColorStop(1, '#0A3A1E');
       ctx.beginPath(); ctx.arc(ccx, ccy, hubR, 0, Math.PI * 2);
       ctx.fillStyle = hg; ctx.fill();
-      ctx.beginPath(); ctx.arc(ccx, ccy, hubR + 6 + hubScale * 5, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(200,255,61,' + (0.12 + hubScale * 0.38) + ')';
-      ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(ccx, ccy, hubR, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(200,255,61,' + (0.25 + hubScale * 0.35) + ')';
+      ctx.lineWidth = 1.5; ctx.stroke();
+
+      // hub mark
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-      ctx.font = '700 ' + Math.round(hubR * 0.9) + 'px "Space Grotesk", sans-serif';
-      ctx.fillText('V', ccx, ccy);
+      ctx.font = '700 ' + Math.round(hubR * 0.85) + 'px "Space Grotesk", sans-serif';
+      ctx.fillText('V', ccx, ccy + hubR * 0.04);
     });
   })();
 
