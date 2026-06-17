@@ -312,4 +312,158 @@
       ctx.fillText('V', ccx, ccy);
     });
   })();
+
+  // ===== Per-letter heading reveal: fade in + slide up + de-blur =====
+  function splitLetters(root){
+    var nodes = Array.prototype.slice.call(root.childNodes);
+    nodes.forEach(function(node){
+      if (node.nodeType === 3){
+        var frag = document.createDocumentFragment();
+        var text = node.nodeValue;
+        for (var i = 0; i < text.length; i++){
+          var ch = text[i];
+          if (ch === ' '){ frag.appendChild(document.createTextNode(' ')); continue; }
+          var span = document.createElement('span');
+          span.className = 'ltr';
+          span.textContent = ch;
+          frag.appendChild(span);
+        }
+        root.replaceChild(frag, node);
+      } else if (node.nodeType === 1){
+        splitLetters(node); // recurse to keep inner markup (e.g. .accent)
+      }
+    });
+  }
+  (function initHeadingLetters(){
+    if (REDUCE) return;
+    var heads = document.querySelectorAll('.hero h1, .sec-head h2, .about-text h2, .netfx-head h2, .final-box h2');
+    if (!heads.length) return;
+    heads.forEach(function(h){
+      h.classList.add('fx-letters');
+      splitLetters(h);
+      var letters = h.querySelectorAll('.ltr');
+      Array.prototype.forEach.call(letters, function(l, i){ l.style.transitionDelay = (i * 0.028) + 's'; });
+    });
+    if ('IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(es){
+        es.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('fx-in'); io.unobserve(e.target); } });
+      }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
+      heads.forEach(function(h){ io.observe(h); });
+    } else {
+      heads.forEach(function(h){ h.classList.add('fx-in'); });
+    }
+  })();
+
+  // ===== Count-up numbers (triggered on scroll into view) =====
+  (function initCountUp(){
+    var els = document.querySelectorAll('.stat b');
+    if (!els.length) return;
+    els.forEach(function(el){
+      var m = el.textContent.trim().match(/^(\D*)(\d+)(.*)$/);
+      if (!m) return;
+      var prefix = m[1], target = parseInt(m[2], 10), suffix = m[3];
+      if (REDUCE) return;
+      el.textContent = prefix + '0' + suffix;
+      var run = function(){
+        var dur = 1400, start = null;
+        var step = function(ts){
+          if (!start) start = ts;
+          var p = Math.min((ts - start) / dur, 1);
+          var eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased) + suffix;
+          if (p < 1) requestAnimationFrame(step);
+          else el.textContent = prefix + target + suffix;
+        };
+        requestAnimationFrame(step);
+      };
+      if ('IntersectionObserver' in window){
+        var io = new IntersectionObserver(function(es){
+          es.forEach(function(e){ if (e.isIntersecting){ run(); io.unobserve(e.target); } });
+        }, { threshold: 0.5 });
+        io.observe(el);
+      } else { run(); }
+    });
+  })();
+
+  // ===== Interactive premium cards (spotlight, glow, tilt, magnetism, particles, ripple) =====
+  (function initCardFx(){
+    if (REDUCE) return;
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+    var cards = document.querySelectorAll('.mcard, .val');
+    Array.prototype.forEach.call(cards, function(card){
+      card.classList.add('fx-card');
+      var border = document.createElement('span'); border.className = 'fx-border';
+      var spot = document.createElement('span'); spot.className = 'fx-spot';
+      card.insertBefore(border, card.firstChild);
+      card.insertBefore(spot, card.firstChild);
+
+      var rect = null, raf = null, hovering = false;
+      var tx = 0, ty = 0, rx = 0, ry = 0;
+      var particles = [], timers = [];
+
+      function applyTransform(){
+        card.style.transform = 'perspective(900px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translate(' + tx + 'px,' + ty + 'px)';
+      }
+
+      card.addEventListener('mouseenter', function(){
+        hovering = true; rect = card.getBoundingClientRect();
+        for (var i = 0; i < 10; i++){
+          (function(idx){
+            var t = setTimeout(function(){
+              if (!hovering || !rect) return;
+              var pa = document.createElement('span'); pa.className = 'fx-particle';
+              pa.style.left = (Math.random() * rect.width) + 'px';
+              pa.style.top = (Math.random() * rect.height) + 'px';
+              card.appendChild(pa); particles.push(pa);
+              pa.animate([
+                { transform: 'translate(0,0) scale(0)', opacity: 0 },
+                { transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0.18 },
+                { transform: 'translate(' + ((Math.random() - 0.5) * 44) + 'px,' + (-20 - Math.random() * 34) + 'px) scale(1)', opacity: 0 }
+              ], { duration: 2200 + Math.random() * 1200, easing: 'ease-out', iterations: Infinity });
+            }, idx * 120);
+            timers.push(t);
+          })(i);
+        }
+      });
+
+      card.addEventListener('mousemove', function(e){
+        if (!rect) rect = card.getBoundingClientRect();
+        var x = e.clientX - rect.left, y = e.clientY - rect.top;
+        card.style.setProperty('--mx', x + 'px');
+        card.style.setProperty('--my', y + 'px');
+        card.style.setProperty('--fx-r', '260px');
+        var cxp = rect.width / 2, cyp = rect.height / 2;
+        ry = ((x - cxp) / cxp) * 6;
+        rx = ((y - cyp) / cyp) * -6;
+        tx = (x - cxp) * 0.04;
+        ty = (y - cyp) * 0.04;
+        if (!raf) raf = requestAnimationFrame(function(){ raf = null; applyTransform(); });
+      });
+
+      card.addEventListener('mouseleave', function(){
+        hovering = false; rect = null;
+        rx = ry = tx = ty = 0; card.style.transform = '';
+        timers.forEach(clearTimeout); timers = [];
+        particles.forEach(function(p){
+          p.style.transition = 'opacity .3s ease'; p.style.opacity = '0';
+          setTimeout(function(){ if (p.parentNode) p.parentNode.removeChild(p); }, 300);
+        });
+        particles = [];
+      });
+
+      card.addEventListener('click', function(e){
+        var r = card.getBoundingClientRect();
+        var rip = document.createElement('span'); rip.className = 'fx-ripple';
+        rip.style.left = (e.clientX - r.left) + 'px';
+        rip.style.top = (e.clientY - r.top) + 'px';
+        var size = Math.max(r.width, r.height) * 1.5;
+        card.appendChild(rip);
+        rip.animate([
+          { width: '0px', height: '0px', opacity: 0.5 },
+          { width: size + 'px', height: size + 'px', opacity: 0 }
+        ], { duration: 700, easing: 'ease-out' });
+        setTimeout(function(){ if (rip.parentNode) rip.parentNode.removeChild(rip); }, 720);
+      });
+    });
+  })();
 })();

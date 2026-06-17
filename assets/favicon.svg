@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Vanguard Group">
+  <circle cx="16" cy="16" r="15" fill="#1E8A45"/>
+  <g fill="none" stroke="#ffffff" stroke-width="1.1" opacity=".92">
+    <circle cx="16" cy="16" r="15"/>
+    <line x1="1" y1="16" x2="31" y2="16"/>
+    <path d="M3.2 10.5 H28.8"/>
+    <path d="M3.2 21.5 H28.8"/>
+    <ellipse cx="16" cy="16" rx="6.2" ry="15"/>
+  </g>
+  <circle cx="21" cy="10.5" r="2.2" fill="#C8FF3D" stroke="#0E4A26" stroke-width=".6"/>
+</svg>
